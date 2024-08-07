@@ -1,0 +1,254 @@
+//当adb没有权限
+sudo apt update
+见到下面情况
+/**                                                                                                                     
+W: GPG 错误：https://dl.google.com/linux/chrome/deb stable InRelease: 由于没有公钥，无法验证下列签名： NO_PUBKEY E88979FB9B30ACF2  ⭕
+E: 仓库 “https://dl.google.com/linux/chrome/deb stable InRelease” 没有数字签名。
+**/
+
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E88979FB9B30ACF2⭕
+//就可以安装想要安装的
+sudo apt update
+sudo apt install python2
+sudo apt install vim net-tools git ssh curl adb aapt fastboot python3-dev portaudio19-dev wakeonlan openjdk-8-jre-headless -y
+
+
+//TV和SMP都一样
+Dongle连接：
+adb connect 192.168.1.101
+./flashimage.py
+双头USB和安卓线：
+adb kill-server
+adb reboot
+sudo adb devices
+adb shell      //有多个设备连接可以指定 adb -s版本号 shell
+reboot bootloader
+sudo fastboot devices
+sudo ./flashimage.py或者
+sudo ./flashimage.py --use_debug_boot (仅限mantra/karat)  Fos8 也是
+
+
+------常用版本------
+mantis_fireos_main_nougat
+kara_fireos_main_pie
+karat_fireos_main_8
+
+
+-----连接TV地址-----
+//首先本机上连接相关地址
+	地址		子网掩码		网关
+   192.168.1.10     255.255.255.0         192.168.4.1
+//连接电视终端
+adb connect 192.168.4.101
+
+//刷duckie的版本---    
+adb reboot bootloader
+//下载相应版本，解压。在解压文件夹中打开终端。
+adb connect 192.168.4.101
+./flashimage.py --aserial=192.168.4.101 --fserial=udp:192.168.4.101      //python3 flashimage.py --aserial=192.168.4.101 --fserial=udp:192.168.4.101
+
+//刷lassen版本（fos8系列）------   
+sudo adb devices
+adb reboot bootloader
+fastboot devices
+./flashimage.py --use_debug_boot
+
+//显示192.168.10.1:5555 连接失败的时候
+1.确保Aggressive Wi-Fi to Cellular handover设备开发者选项中的网络部分已关闭。
+2.从您的电脑连续 ping 到设备以确保它不处于网络空闲模式ping -t 192.168.1.10（Windows cmd），解锁设备，甚至尝试浏览某些网站以使其脱离网络空闲状态。
+3.如果 ping 不起作用，请关闭/打开 Android Wifi 并返回步骤 2。
+4.当它回复 ping 时，通过 USB 连接它，然后：
+adb usb
+adb tcpip 5555
+adb connect 192.168.10.1:5555
+5.如果仍然没有连接，请尝试在设备通过 USB 连接时将 USB 连接模式切换为 MTP / PTP / 相机，然后重复这些步骤...
+
+如果以上方法无效，请尝试以管理员身份运行 ADB。对于 Ubuntu -
+sudo adb start-server
+
+
+
+
+
+
+-------平板版本下载以及刷版本----------
+//查文件路径
+localcts config path    
+//修改里面的版本号	
+nano /home/test/.localcts/Lassen0002_config.yaml (查出来的路径)   
+//运行下载
+localcts run -b 
+//刷版本--Nightly
+sudo adb devices
+adb reboot bootloader
+fastboot devices
+./flashimage.py 
+//过OOBE,先选标准英语，其他全部跳过。先点击About phone的最后Build number,进入System中Developer options打开发者模式，开启USD Debugging。
+//在另外一台电脑上跑case
+例如：run cts --logcat-on-failure --wifi-ssid CTS_208_5G --wifi-psk amazontest --shard-count 1 --serial GN42DN043324010E --include-filter "CtsProviderTestCases android.provider.cts.media.MediaStore_FilesTest#testCaseSensitivity[0]" --include-filter "CtsShortcutHostTestCases android.content.pm.cts.shortcuthost.ShortcutManagerMultiuserTest#testManagedUser" --include-filter "CtsAppSecurityHostTestCases android.appsecurity.cts.ApexSignatureVerificationTest#testApexPubKeyIsNotWellKnownKey"
+//出现failed
+l r     //列出信息列表
+//重跑case
+run retry --retry 1(更据查出的号写) --shard-count 1(设备的数量) --serial GMJ2WF0034340002
+//提取log和results以及截图  命名eg：Suntones&276_3cases
+
+
+---刷Anan流程  anna和lassen测用use版本---
+1.刷版本
+//刷ANNA版本
+adb connect 192.168.1.101   
+adb -s 192.168.1.101 reboot bootloader
+fastboot -s udp:192.168.1.101 devices
+./flashimage.py  或第三位不是1就要换相应的ip
+./flashimage.py --aserial=192.168.4.101 --fserial=udp:192.168.4.101
+//改a3
+adb connect 192.168.1.101
+adb -s 192.168.1.101 reboot bootloader
+fastboot -s udp:192.168.1.101 devices
+fastboot -s udp:192.168.1.101 oem idme fos_flags a3
+
+//或 adb shell
+idme print
+idme eth_ip_addr 192.168.2.101    //改ip
+未完
+2.过OOBE
+3.安装apk
+//不需要线来连连接电视的方法，先连同一区域的网
+adb connect 172.16.21.249
+//推apk
+adb shell settings put global hidden_api_policy 1
+adb install -r -g 'CtsVerifier.apk（要拖拽的）'
+4.测试CtsVerifier
+  蓝牙，音响....不用手机
+5.Wifi需要用手机进行测试
+6.测蓝牙需要对手机进行安装版本和安装两个软件并进行测试
+//下软件，另开终端
+adb shell settings put global hidden_api_policy 1
+adb install -r -g '/home/neu/下载/CtsVerifierUSBCompanion.apk' //推CtsVerifier 9
+adb install -r -g '/home/neu/下载/CtsVerifier.apk'
+7.遇到测试fails需要录视频并下载
+adb shell screenrecord --size 1280x720 --bit-rate 4M /sdcard/Test.mp4
+adb pull /sdcard/Test.mp4
+//另开终端,先运行log在运行录视频的
+adb logcat -b all >test.log
+8.第一个usb cases ,点进去输入命令 (一定要确保连上)
+adb shell am start -e fingerprints placeholder -e key placeholder com.android.systemui/.UsbDebuggingActivityAlias
+9.测蓝牙，如果断连不成功
+adb connect 192.168.1.101
+adb pull /data/misc/bluedroid/bt_config.conf     delete pixel3 bluetooth address
+nano bt_config.conf    
+adb shell svc bluetooth disable
+adb push bt_config.conf /data/misc/bluedroid/
+adb shell svc bluetooth enable
+10.导结果，先电视保存，再建个文档开终端连接
+//把结果倒入到VerifierReports文件夹下
+adb pull /storage/emulated/0/VerifierReports 
+//在VerifierReports中的解压文件夹再开终端
+python3 -m http.server 8000
+//把网页结果复制进去
+
+
+//---lassen推出结果---(Fs8)
+adb shell appops set com.android.cts.verifier android:read_device_identifiers allow
+adb shell appops set com.android.cts.verifier MANAGE_EXTERNAL_STORAGE 0
+//先TV保存，再输入命令
+adb pull /storage/emulated/0/verifierReports/
+//在VerifierReports文件夹再开终端
+python3 -m http.server 8000
+
+
+
+
+------测case包（auto TV）------
+//刷平板版本Nightly
+sudo adb devices
+adb reboot bootloader
+fastboot devices
+./flashimage.py 
+
+1.下载相应的版本,刷版本并改a3
+//下版本有两种方法，一种用chime机器人下，另一种用脚本下
+//改a3
+sudo adb devices
+adb reboot bootloader
+fastboot devices
+fastboot oem idme fos_flags a3
+2.上锁（home ——> downloads ——> lock unlock  ——> lock.txt）
+adb shell mkdir -p /mnt/vendor/certificate/keymaster
+adb push TVD01292_KeyMaster4_12560.bin /mnt/vendor/certificate/keymaster/attestkey.bin
+adb shell chmod 644 /mnt/vendor/certificate/keymaster/*			*/															
+adb shell intertaca_manual KEYMASTER4 1
+adb shell intertaca_manual -c KEYMASTER4
+adb reboot bootloader
+//fastboot devices
+cd image_files  按Tab
+fastboot erase boot
+fastboot flash boot boot.img
+fastboot oem idme fos_flags 0 
+fastboot oem idme dev_flags 0
+fastboot oem relock
+fastboot reboot
+3.过OOBE后，打开开发者模式（设置 ——> Devices&software ——> About ——> 连续点击 You TV ——> 返回进入开发者里面 打开前两项）
+4.在Home ——> ./localcts ——> 找到带Android_cts文件并进入到tools文件夹下打开终端
+sudo adb devices
+./cts-tradefed
+// run cts --logcat-on-failure --shard-count 1 --serial GMJ2WF0034340002 --include-filter "CtsKeystoreTestCases" --include-filter "CtsNetTestCases"
+//例如：   run cts --logcat-on-failure --shard-count 1 --serial GMJ2WF0034340002 --include-filter "CtsNetTestCases android.net.cts.DnsTest#testDnsWorks" --include-filter "CtsNetTestCases[instant] android.net.cts.DnsTest#testDnsWorks" --include-filter "CtsKeystoreTestCases android.keystore.cts.AttestationPerformanceTest#testEcKeyAttestation" --include-filter "CtsKeystoreTestCases android.keystore.cts.AttestationPerformanceTest#testRsaKeyAttestation" --include-filter "CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testEcAttestation" --include-filter "CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testEcAttestation_DeviceLocked" --include-filter "CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testEcAttestation_TooLargeChallenge" --include-filter "CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testRsaAttestation" --include-filter "CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testRsaAttestation_DeviceLocked" --include-filter "CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testRsaAttestation_TooLargeChallenge"
+5.出现报错
+l r
+run retry --retry   ......
+
+6.拷结果，进入Android_cts文件把results和logs结果文件整个拷出来，改名（eg：lassen#1955_results）,截图（不能截取全屏）
+7.解锁
+adb reboot bootloader
+fastboot devices 
+fastboot flash unlock 托文件(*解锁文件名字signed开头的)
+fastboot oem idme fos_flags a3
+fastboot reboot
+
+
+------power 6条cases-----
+1.刷版本连接power的WIFI和账户
+2.连接相应的电压表和线板  （线板只能连接最左边）usb连接线板的一端要加一个扩展坞
+3.信号线一定要对应，然后连接相应的ip地址(只有dongle需要)和mac地址
+4.将设备加入池子里，要对应好版本，电视尺寸，接口（靠近线的一边为1），账户和WIFI的密码
+5.加入case
+
+
+
+
+
+
+
+
+
+
+---TV wifi---
+admin:power_5G
+password: power123456
+
+admin:CTS_208_5G
+password:amazontest
+
+---TV账户---
+//admin
+neusoftfactory+02@amazon.com
+//password
+fqa123
+
+//208 房间TV账户和密码
+adb shell input text wanguyu+15@amazon.com
+adb shell input text fqa123
+
+
+-----挂载vpn-----
+//打开终端
+sudo openvpn --config "wang_dongyang.ovpn拖拽这个文件过来"
+//输入账号密码等待验证码（在峰哥手中）
+账号：ext-neusoft-wang_dongyang
+密码：Wdy1566854106.
+
+ext-neusoft-sunlifeng
+Slf7779091!
+
+
